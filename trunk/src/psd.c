@@ -21,6 +21,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * $Id: psd.c, created by Patrick in 2006.05.18, libpsd@graphest.com Exp $
+
+
+ 
  */
 
 #include "libpsd.h"
@@ -38,11 +41,7 @@ enum {
 	PSD_DONE
 };
 
-extern psd_status psd_get_file_header(psd_context * context);
-extern psd_status psd_get_color_mode_data(psd_context * context);
-extern psd_status psd_get_image_resource(psd_context * context);
-extern psd_status psd_get_layer_and_mask(psd_context * context);
-extern psd_status psd_get_image_data(psd_context * context);
+
 extern void psd_color_mode_data_free(psd_context * context);
 extern void psd_image_resource_free(psd_context * context);
 extern void psd_layer_and_mask_free(psd_context * context);
@@ -87,7 +86,7 @@ static psd_status psd_image_load_tag(psd_context ** dst_context, psd_char * file
 	}
 	else
 	{
-		psd_stream_free(context);
+		//psd_stream_free(context);	//delete by freeman
 	}
 	
 	*dst_context = context;
@@ -201,7 +200,13 @@ static psd_status psd_main_loop(psd_context * context)
 			case PSD_IMAGE_DATA:
 				status = psd_get_image_data(context);
 				if(status == psd_status_done)
+				{
 					context->state = PSD_DONE;
+	#ifdef LOG_MSG
+		png_save("merged.png",context->merged_image_data
+			,context->width,context->height);		//save a temp png file under current dir
+	#endif
+				}
 				else if(status == psd_status_unkown_error)
 					status = psd_status_image_data_error;
 				break;
@@ -217,4 +222,32 @@ static psd_status psd_main_loop(psd_context * context)
 
 	return status;
 }
+
+//-------------------------start--belows are for psd file save func--------by-freeman------------
+/*
+File Header		// 26 bytes
+Color Mode Data	// 0		Only indexed color and duotone have color mode data.
+Image Resources	// 0x13AE
+Layer and Mask Information		//
+Image Data		
+*/
+int psd_image_save(psd_context *context)
+{
+	void *fp = context->file;
+/*
+rewind()函数
+原型：void rewind(FILE *fp)
+作用：使文件fp的位置指针指向文件开始。
+*/
+	rewind(fp);		//reset the file pointer. 
+	psd_set_file_header(context,fp);
+	psd_set_color_mode_data(context,fp);
+	psd_set_image_resource(context,fp);
+	psd_set_layer_and_mask(context,fp);
+	psd_set_image_data(context,fp);
+
+	return 0;
+}
+//-------------------------end--for psd file save func--------by-freeman----------------------
+
 
