@@ -22,7 +22,9 @@
  *
  * $Id: image_resource.c, created by Patrick in 2006.05.18, libpsd@graphest.com Exp $
  */
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "libpsd.h"
 #include "psd_config.h"
 #include "psd_system.h"
@@ -36,7 +38,7 @@ static const psd_uchar ExifHeader[] = {0x45, 0x78, 0x69, 0x66, 0x00, 0x00};
 #endif
 
 #ifdef PSD_INCLUDE_LIBXML
-#include <libxml/parser.h>
+#include <parser.h>
 #endif
 
 
@@ -59,12 +61,17 @@ psd_status psd_get_image_resource(psd_context * context)
 
 	// Length of image resource section
 	length = psd_stream_get_int(context);
+	context->ImageResLen=length;		//add by freeman
 	if(length <= 0)
 		return psd_status_done;
 
 	// default
 	context->global_angle = 30;
 	context->global_altitude = 30;
+
+	//add by yingcai, ignore this section
+	//context->stream.current_pos += length;
+	//return psd_status_done;	//just return.
 
 	while(length > 0)
 	{
@@ -154,7 +161,8 @@ psd_status psd_get_image_resource(psd_context * context)
 								size += *(buffer + size) + 1;
 								context->alpha_channels ++;
 							}
-							context->color_channels = context->channels - context->alpha_channels;
+							//context->color_channels = context->channels - context->alpha_channels;
+							context->channels = context->color_channels + context->alpha_channels;	//add by freeman
 							context->alpha_channel_info = (psd_alpha_channel_info *)psd_malloc(context->alpha_channels * sizeof(psd_alpha_channel_info));
 							if(context->alpha_channel_info == NULL)
 							{
@@ -303,7 +311,8 @@ psd_status psd_get_image_resource(psd_context * context)
 								size += PSD_CHAR_TO_INT(buffer + size) * 2 + 4;
 								context->alpha_channels ++;
 							}
-							context->color_channels = context->channels - context->alpha_channels;
+							//context->color_channels = context->channels - context->alpha_channels;
+							context->channels = context->color_channels + context->alpha_channels;	//add by freeman
 							context->alpha_channel_info = (psd_alpha_channel_info *)psd_malloc(context->alpha_channels * sizeof(psd_alpha_channel_info));
 							if(context->alpha_channel_info == NULL)
 							{
@@ -354,7 +363,8 @@ psd_status psd_get_image_resource(psd_context * context)
 						if(context->alpha_channels == 0)
 						{
 							context->alpha_channels = sizeofdata / 4;
-							context->color_channels = context->channels - context->alpha_channels;
+							//context->color_channels = context->channels - context->alpha_channels;
+							context->channels = context->color_channels + context->alpha_channels;	//add by freeman
 							context->alpha_channel_info = (psd_alpha_channel_info *)psd_malloc(context->alpha_channels * sizeof(psd_alpha_channel_info));
 							if(context->alpha_channel_info == NULL)
 								return psd_status_malloc_failed;
@@ -631,7 +641,7 @@ psd_status psd_get_image_resource(psd_context * context)
 					// (Photoshop CS) Pixel Aspect Ratio
 					case 1064:
 						// 4 bytes (version = 1)
-						psd_assert(psd_stream_get_int(context) == 1);
+//						psd_assert(psd_stream_get_int(context) == 1);	//delete by freeman
 						// 8 bytes double, x / y of a pixel
 						context->pixel_aspect_ratio = psd_stream_get_double(context);
 						break;
@@ -663,7 +673,7 @@ psd_status psd_get_image_resource(psd_context * context)
 							psd_get_path(context, sizeofdata);
 						}
 						// If the file contains a resource of type 8BIM with an ID of 2999, then this resource
-						// contains a Pascal�Cstyle string containing the name of the clipping path to use with this
+						// contains a Pascal–style string containing the name of the clipping path to use with this
 						// image when saving it as an EPS file???
 						else if(ID == 2999)
 						{
@@ -684,7 +694,9 @@ psd_status psd_get_image_resource(psd_context * context)
 		}
 		else
 		{
+			//printf("psd_status_resource_signature_error,tag is:%x\n",tag);
 			return psd_status_resource_signature_error;
+			//return psd_status_done;
 		}
 	}
 
@@ -726,5 +738,45 @@ void psd_image_resource_free(psd_context * context)
 #ifdef PSD_GET_PATH_RESOURCE
 	psd_path_free(context);
 #endif
+}
+
+/*
+Image resource blocks are the basic building unit of several file formats, including Photoshop’s native file format, JPEG, and TIFF. 
+Image resources are used to store non–pixel data associated with an image, such as pen tool paths.
+Table 2–1: Image resource block
+Type 	Name Description
+OSType 	Type Photoshop always uses its signature,8BIM.
+int16 	ID Unique identifier (see table 10–2).
+PString Name A pascal string, padded to make size even (a null nameconsists of two bytes of 0)
+int32 Size Actual size of resource data. This does not include theType,ID,Name, orSizefields.Variable Data Resource data, padded to make size even
+
+*/
+int psd_set_image_resource(psd_context *context,void *fp)
+{
+	int ret=-1;
+	psd_uint tmp32,ImageResLen=0;
+
+	// Length of image resource section
+	if (context->ImageResLen>0)
+	{
+		printf("we do NOT support image resource section yet!\n");
+		ImageResLen = 0;
+	}
+	else
+	{
+		ImageResLen = context->ImageResLen;
+	}
+	LITTLE2BIG_INT(tmp32,ImageResLen);		//if length equals to zero, we ignore this section.
+	if(psd_fwrite((psd_uchar *)&tmp32,4,fp) != 4)
+	{
+		printf("psd_fwrite error! fp position is on:%d\n",psd_ftell(fp));
+		ret=-1;
+		goto err_exit;
+	}
+	
+	return 0;
+
+err_exit:
+	return ret;
 }
 
