@@ -276,7 +276,8 @@ static psd_status psd_combine_rgb8_channel(psd_context * context, psd_layer_reco
 	{
 		for(i = layer->width * layer->height; i --; )
 		{
-			*dst_color = PSD_RGB_TO_COLOR(*red, *green, *blue);
+			//*dst_color = PSD_RGB_TO_COLOR(*red, *green, *blue);
+			*dst_color = PSD_BGR_TO_COLOR(*blue, *green, *red);	//modify by freeman
 			dst_color ++;
 			red ++;
 			green ++;
@@ -287,7 +288,8 @@ static psd_status psd_combine_rgb8_channel(psd_context * context, psd_layer_reco
 	{
 		for(i = layer->width * layer->height; i --; )
 		{
-			*dst_color = PSD_ARGB_TO_COLOR(*alpha, *red, *green, *blue);
+			//*dst_color = PSD_ARGB_TO_COLOR(*alpha, *red, *green, *blue);
+			*dst_color = PSD_ABGR_TO_COLOR(*alpha, *blue, *green, *red);//modify by freeman
 			dst_color ++;
 			alpha ++;
 			red ++;
@@ -704,6 +706,7 @@ static psd_status psd_get_layer_user_supplied_layer_mask8(psd_context * context,
 				return psd_status_malloc_failed;
 			memcpy(layer->layer_mask_info.mask_data, context->temp_image_data + context->max_channel_length * i, 
 				layer->layer_mask_info.width * layer->layer_mask_info.height);
+			
 			return psd_status_done;
 		}
 	}
@@ -813,7 +816,7 @@ psd_status psd_get_layer_channel_image_data(psd_context * context, psd_layer_rec
 	{
 		psd_assert(layer->channel_info[i].channel_id >= -2);
 		
-		length = layer->channel_info[i].data_length - 2;
+		length = layer->channel_info[i].data_length - 2;	//why??
 		if(length > context->temp_channel_length)
 		{
 			psd_freeif(context->temp_channel_data);
@@ -946,6 +949,8 @@ psd_status psd_get_layer_channel_image_data(psd_context * context, psd_layer_rec
 	if(layer->width * layer->height > 0)
 	{
 		layer->image_data = (psd_argb_color *)psd_malloc(layer->width * layer->height * 4);
+	//	layer->image_data=(psd_argb_color*)psd_malloc(layer->width*layer->height*layer->number_of_channels);	//modify by yingcai
+		
 		if(layer->image_data == NULL)
 			return psd_status_malloc_failed;
 
@@ -1045,5 +1050,107 @@ psd_status psd_get_layer_channel_image_data(psd_context * context, psd_layer_rec
 	}
 
 	return psd_status_done;
+}
+
+
+
+// 8bit rgb. Image data is stored in planar order, first all the red data, 
+//then all the green data, etc.  that means RR GG BB , no alpha channel data in merged data section.
+static psd_status split_rgb8_channel(psd_context * context,psd_layer_record * layer)
+{
+	psd_int i;
+	psd_uchar * red, * green, * blue, * alpha;
+	int width=layer->width;
+	int height=layer->height;
+	int chCnt=layer->number_of_channels;
+	int chLen=layer->per_channel_length;
+	psd_uchar *	src_color=NULL,*dst_color=NULL;
+
+	if ( (layer->temp_image_data==NULL) || ((chLen*chCnt)==0) )
+	{
+		layer->image_data=NULL;
+		return psd_status_done;
+	}
+	
+	src_color = layer->temp_image_data;
+	dst_color = layer->image_data= psd_malloc(chLen * chCnt);
+
+	if(chCnt == 4)
+	{
+		red = dst_color;
+		green = dst_color + chLen;
+		blue = green + chLen;
+		alpha = blue + chLen;
+		
+		for(i = width * height; i --; )
+		{
+			*red = src_color[0];
+			*green = src_color[1];
+			*blue = src_color[2];
+			*alpha = src_color[3];		//???argb or rgba?? i Don't know
+			src_color += 4;
+			red ++;
+			green ++;
+			blue ++;
+			alpha ++;	
+		}
+	}
+	else	//color channel = 3
+	{
+		red = dst_color;
+		green = dst_color + chLen;
+		blue = green + chLen;
+		
+		for(i = width*height; i --; )
+		{
+			*red = src_color[0];
+			*green = src_color[1];
+			*blue = src_color[2];
+			src_color += 4;		//skip src_color[3]
+			red ++;
+			green ++;
+			blue ++;
+		}	
+	}
+
+	return psd_status_done;
+}
+
+static psd_status split_rgb8_channel(psd_layer_record * layer){
+    return split_rgb8_channel(NULL, layer);
+}
+
+
+// Channel image data. Planar order = RRR GGG BBB, etc.
+int psd_set_layer_channel_image_data(psd_context * context, psd_layer_record * layer, void *fp)
+{
+	int ret=-1;
+	psd_int length,i,max_channel_length;
+	psd_short compression,tmp16=0;
+	psd_uchar * image_data = NULL;
+
+	max_channel_length = layer->per_channel_length;
+	
+	split_rgb8_channel(context,layer);	//change RGBARGBARGBA--->AAARRRGGGBBB
+	image_data = (psd_uchar *)layer->image_data;
+
+	if (image_data!=NULL)
+	{
+		for(i=0; i<layer->number_of_channels; i++)
+		{
+			compression=0;		// 0:raw data
+			LITTLE2BIG_SHORT(tmp16,compression);
+			psd_fwrite((psd_uchar *)&tmp16,2,fp);
+		
+			//length = layer->channel_info[i].data_length;
+			length = max_channel_length;
+			ret = psd_fwrite(image_data + i*max_channel_length,length,fp);
+			if (ret == length)
+			{
+				ret=0;
+			}
+		}
+	}
+	return ret;
 }
 
