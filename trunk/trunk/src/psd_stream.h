@@ -8,8 +8,18 @@ extern "C" {
 
 #define PSD_STREAM_MAX_READ_LENGTH		4096
 
+//big endian. psd stream is using big endian.  comment by freeman
 #define PSD_CHAR_TO_SHORT(str)			((*(str) << 8) | *((str) + 1))
 #define PSD_CHAR_TO_INT(str)			((*(str) << 24) | (*((str) + 1) << 16) | (*((str) + 2) << 8) | *((str) + 3))
+
+#define	LITTLE2BIG_SHORT(dst16,src16) \
+	*(((unsigned char *)&dst16) + 0) = src16>>8; \
+	*(((unsigned char *)&dst16) + 1) = src16
+#define	LITTLE2BIG_INT(dst32,src32) \
+	*(((unsigned char *)&dst32) + 0) = src32>>24; \
+	*(((unsigned char *)&dst32) + 1) = src32>>16; \
+	*(((unsigned char *)&dst32) + 2) = src32>>8; \
+	*(((unsigned char *)&dst32) + 3) = src32
 
 
 psd_int psd_stream_get(psd_context * context, psd_uchar * buffer, psd_int length);
