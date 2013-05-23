@@ -25,8 +25,13 @@ void psd_freeif(void * block);
 void * psd_fopen(psd_char * file_name);
 psd_int psd_fsize(void * file);
 psd_int psd_fread(psd_uchar * buffer, psd_int count, void * file);
+psd_int psd_fwrite(psd_uchar * buffer, psd_int count, void * file);
 psd_int psd_fseek(void * file, psd_int length);
 void psd_fclose(void * file);
+psd_int psd_ftell(void * file);
+psd_int psd_fwrite(psd_uchar * buffer, psd_int count, void * file);
+void *psd_fnew(psd_char * file_name);
+
 
 
 #ifdef __cplusplus
