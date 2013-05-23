@@ -1116,11 +1116,6 @@ static psd_status split_rgb8_channel(psd_context * context,psd_layer_record * la
 	return psd_status_done;
 }
 
-static psd_status split_rgb8_channel(psd_layer_record * layer){
-    return split_rgb8_channel(NULL, layer);
-}
-
-
 // Channel image data. Planar order = RRR GGG BBB, etc.
 int psd_set_layer_channel_image_data(psd_context * context, psd_layer_record * layer, void *fp)
 {
