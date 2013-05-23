@@ -27,7 +27,7 @@
 #include "psd_system.h"
 #include "psd_stream.h"
 #include "psd_color.h"
-
+ 
 
 static
 #ifdef __GNUC__
@@ -57,6 +57,9 @@ psd_int psd_stream_get(psd_context * context, psd_uchar * buffer, psd_int length
 {
 	psd_stream * stream;
 	psd_int left, read = 0;
+#ifdef LOG_MSG
+	char pLine[256];
+#endif		
 
 	if(buffer == NULL)
 		return 0;
@@ -110,7 +113,11 @@ psd_int psd_stream_get(psd_context * context, psd_uchar * buffer, psd_int length
 	}
 
 	stream->current_pos += read;
-
+//#ifdef LOG_MSG
+#if 0
+	sprintf(pLine,"stream->current_pos=%d(0x%x)\n",stream->current_pos,stream->current_pos);
+	Log_MsgLine(LOGFILE_INFO,pLine);
+#endif	
 	return read;
 }
 
@@ -118,8 +125,10 @@ psd_int psd_stream_get_null(psd_context * context, psd_int length)
 {
 	psd_stream * stream;
 	psd_int left, read = 0;
-
-	psd_assert(length >= 0);
+#ifdef LOG_MSG
+	char pLine[256];
+#endif	
+//	psd_assert(length >= 0);
 
 	if(length <= 0)
 		return 0;
@@ -168,6 +177,11 @@ psd_int psd_stream_get_null(psd_context * context, psd_int length)
 	}
 
 	stream->current_pos += read;
+//#ifdef LOG_MSG
+#if 0
+	sprintf(pLine,"stream->current_pos=%d(0x%x)\n",stream->current_pos,stream->current_pos);
+	Log_MsgLine(LOGFILE_INFO,pLine);
+#endif	
 
 	return read;
 }
@@ -379,3 +393,28 @@ void psd_stream_free(psd_context * context)
 		context->file = NULL;
 	}
 }
+
+
+psd_uint psd_stream_set_blend_mode(psd_blend_mode mode)
+{
+	psd_uint tag;
+
+	switch(mode)
+	{
+		case psd_blend_mode_normal:
+			tag = 'norm';
+			break;
+		case psd_blend_mode_darken:
+			tag = 'dark';
+			break;
+		case psd_blend_mode_lighten:
+			tag = 'lite';
+			break;
+		default:
+			tag = 'norm';
+			break;
+	}
+
+	return tag;
+}
+
