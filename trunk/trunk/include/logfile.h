@@ -9,7 +9,15 @@ Author: Yingcai.Tan
        extern "C" {
 #endif
 
-#define DLLEXPORT __declspec(dllexport)
+#ifdef WIN32
+#ifdef DLL_EXPORTS
+#define DLL_API __declspec(dllexport)
+#else
+#define DLL_API __declspec(dllimport)
+#endif
+#else
+#define DLL_API 
+#endif
 
 #define	LOG_CONFIG_FILE	"/mnt/mtd/log.cfg"
 #define	MAX_LOGFILE_INFO_SIZE	(5000*1024)
@@ -30,7 +38,7 @@ struct LogCfgPara
 
 typedef struct LogCfgPara tLogPara;
 
-DLLEXPORT void Log_MsgNew(char *LogFileName);		//create a log file
+DLL_API void Log_MsgNew(char *LogFileName);		//create a log file
 
 /*
 Func: append a line to the log file. if the log file does not exist, create it. if its size exceeds MAX_LOGFILE_INFO_SIZE, delete and create it again.
