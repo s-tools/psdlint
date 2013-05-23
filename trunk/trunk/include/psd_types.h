@@ -3,9 +3,6 @@
 
 #include <stddef.h>
 
-#include <stdlib.h>		//add by yingcai
-#include <stdio.h>
-#include <string.h>
 
 typedef unsigned char			psd_bool;
 #define psd_true				1
@@ -20,7 +17,6 @@ typedef int						psd_int;
 typedef unsigned int			psd_uint;
 typedef float					psd_float;
 typedef double					psd_double;
-//typedef int						psd_handle;		//add by freeman
 
 
 typedef unsigned char			psd_color_component;
