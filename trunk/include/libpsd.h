@@ -27,17 +27,34 @@
 #define __LIB_PSD_H__
 
 #include "psd_types.h"
-
+#include "logfile.h"			//add by freeman
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//add by freeman
+#define ROUND_UP_2x(a)	((a+1)>>1)<<1)
+#define ROUND_UP_4x(a)	((a+3)>>2)<<2)
+
+typedef struct
+{
+	psd_uint 			signature;			//Signature: always equal to '8BPS'. Do not try to read the file if the signature does not match this 
+	// value.	 Mac OS = '8BPS', windows=.psd
+	psd_ushort 		version;				//Version: always equal to 1. Do not try to read the file if the version does not match this value. (**PSB** version is 2.)
+	psd_char 		reserved[6];			//Reserved: must be zero.
+	psd_ushort 		number_of_channels;	    //The number of channels in the image, including any alpha channels. Supported range is 1 to 56.
+	psd_uint		height_of_image;		//The height of the image in pixels. Supported range is 1 to 30,000. (**PSB** max of 300,000.)
+	psd_uint		width_of_image;		    //The width of the image in pixels. Supported range is 1 to 30,000. (*PSB** max of 300,000)
+	psd_ushort		depth;				    //Depth: the number of bits per channel. Supported values are 1, 8, and 16.
+	psd_ushort		color_mode;			    //The color mode of the file. Supported values are: Bitmap = 0; Grayscale = 1; Indexed = 2; RGB = 3; CMYK = 4; Multichannel = 7; Duotone = 8; Lab = 9.
+}PSD_HEADER;
+
 
 // global status
 typedef enum {
-	psd_status_done								= 0,
-	psd_status_invalid_context					= -1,
+	psd_status_done								= 0,		//success
+	psd_status_invalid_context					= -1,		//common fail
 	psd_status_invalid_file						= -2,
 	psd_status_unkown_error						= -3,
 	psd_status_malloc_failed					= -4,
@@ -308,6 +325,7 @@ typedef enum {
 	psd_print_user_defined	= 2,
 } psd_print_style;
 
+#pragma pack(1)		//add by freeman
 typedef struct _psd_stream
 {
 	psd_uchar *					buffer;
@@ -420,7 +438,8 @@ typedef struct _psd_slices_resource_block
 // Slices resource format
 // Adobe Photoshop 6.0 and later stores slices information for an image in an image
 // resource block. .
-typedef struct _psd_slices_resource{
+typedef struct _psd_slices_resource
+{
 	psd_int						bounding_top;	// Bounding rectangle for all of the slices: top, left, bottom, right of all the slices
 	psd_int						bounding_left;
 	psd_int						bounding_bottom;
@@ -565,15 +584,15 @@ typedef struct _psd_layer_mask_info
 // Layer blending ranges
 typedef struct _psd_layer_blending_ranges
 {
-	psd_ushort					gray_black_src;	// Composite gray blend source. Contains 2 black values followed by 2 white values. Present but irrelevant for Lab & Grayscale.
-	psd_ushort					gray_white_src;
-	psd_ushort					gray_black_dst;	// Composite gray blend destination range
-	psd_ushort					gray_white_dst;
-	psd_int						number_of_blending_channels;
-	psd_ushort *				channel_black_src;// channel source range
-	psd_ushort *				channel_white_src;
-	psd_ushort *				channel_black_dst;// First channel destination range
-	psd_ushort *				channel_white_dst;
+	psd_ushort		gray_black_src;	// Composite gray blend source. Contains 2 black values followed by 2 white values. Present but irrelevant for Lab & Grayscale.
+	psd_ushort		gray_white_src;
+	psd_ushort		gray_black_dst;	// Composite gray blend destination range
+	psd_ushort		gray_white_dst;
+	psd_int			number_of_blending_channels;
+	psd_ushort *		channel_black_src;// channel source range
+	psd_ushort *		channel_white_src;
+	psd_ushort *		channel_black_dst;// First channel destination range
+	psd_ushort *		channel_white_dst;
 } psd_layer_blending_ranges;
 
 // Vector mask setting (Photoshop 6.0)
@@ -597,6 +616,7 @@ struct _psd_layer_record
 	psd_int						width;
 	psd_int						height;
 	psd_short					number_of_channels;	// Number of channels in the layer, including any alpha channels. Supported range is 1 to 56.
+	psd_uint					per_channel_length;	//add by freeman
 	psd_channel_info *			channel_info;		//Channel information
 	psd_blend_mode				blend_mode;			// Blend mode key
 	psd_uchar					opacity;			// 0 = transparent ... 255 = opaque
@@ -609,8 +629,13 @@ struct _psd_layer_record
 	psd_layer_blending_ranges 	layer_blending_ranges;
 	psd_uchar					layer_name[256];	// Pascal string, padded to a multiple of 4 bytes.
 	psd_layer_vector_mask		vector_mask;
-	
-	psd_argb_color *			image_data;
+
+	psd_uint		LayerExtraLen;	//Length of the extra data field. This is the total length of the next ?ve ?elds..
+	psd_uint		LayerMaskLen;	//24 bytes, or 4 bytes if no layer mask.
+	psd_uint		LayerBlendRangeLen;	//Length of layer blending ranges data
+	psd_uint		LayerLen;		
+	psd_uchar *	temp_image_data;	//add by tanyc,buffer format: RGBARGBARGBA
+	psd_argb_color *			image_data;		//--->AAARRRGGGBBB
 	
 	psd_int						layer_info_count;
 	psd_layer_info_type			layer_info_type[psd_layer_info_type_count];
@@ -1214,7 +1239,7 @@ typedef struct _psd_context
 	psd_stream					stream;
 	psd_uint					state;
 	psd_load_tag				load_tag;
-	
+
 	psd_int						width;
 	psd_int						height;
 	psd_ushort					channels;
@@ -1224,6 +1249,7 @@ typedef struct _psd_context
 	psd_int						color_map_length;
 	psd_argb_color *			color_map;
 
+	psd_uint					ImageResLen;		//image resource section length, add by freeman
 	psd_uchar					caption[256];
 
 	psd_bool					fill_resolution_info;
@@ -1290,6 +1316,9 @@ typedef struct _psd_context
 	psd_bool					fill_print_flags_info;
 	psd_print_flags_info		print_flags_info;
 
+	psd_uint		LayerandMaskLen;		//Layer and mask information section, add by freeman
+	psd_uint		LayerLen;		//Layers info section length (2x), add by freeman
+	psd_uint		gLayerMaskLen;	//Length of global layer mask info section.
 	psd_short					layer_count;
 	psd_layer_record *			layer_records;
 
@@ -1303,12 +1332,13 @@ typedef struct _psd_context
 	psd_int						path_count;
 	psd_path *					paths;
 
-	psd_argb_color *			merged_image_data;
+	psd_uint					MergedImageLen;		//, add by freeman
+	psd_argb_color *			merged_image_data;	//--->AAARRRGGGBBB
 	psd_argb_color *			blending_image_data;
 
 	// temporary data
 	psd_uchar *					rand_data;
-	psd_uchar *					temp_image_data;
+	psd_uchar *					temp_image_data;		//merged buffer: RGBARGBARGBA
 	psd_int						temp_image_length;
 	psd_uchar *					temp_channel_data;
 	psd_int						temp_channel_length;
@@ -1316,6 +1346,7 @@ typedef struct _psd_context
 	psd_int						max_channel_length;
 } psd_context;
 
+#pragma pack()		//add by freeman
 
 psd_status psd_image_load(psd_context ** dst_context, psd_char * file_name);
 psd_status psd_image_load_header(psd_context ** dst_context, psd_char * file_name);
@@ -1328,6 +1359,19 @@ psd_status psd_adjustment_layer_update(psd_layer_record * layer);
 psd_status psd_layer_effects_update(psd_layer_record * layer, psd_layer_effects_type type);
 psd_status psd_image_blend(psd_context * context, psd_int left, psd_int top, psd_int width, psd_int height);
 
+extern psd_status psd_get_file_header(psd_context * context);
+extern psd_status psd_get_color_mode_data(psd_context * context);
+extern psd_status psd_get_image_resource(psd_context * context);
+extern psd_status psd_get_layer_and_mask(psd_context * context);
+extern psd_status psd_get_image_data(psd_context * context);
+
+//add by freeman
+extern int psd_set_file_header(psd_context * context,void *fp);
+extern int psd_set_color_mode_data(psd_context *context,void *fp);
+extern int psd_set_image_resource(psd_context *context,void *fp);
+extern int psd_set_layer_and_mask(psd_context * context,void *fp);
+extern int psd_set_image_data(psd_context * context, void *fp);
+extern int psd_image_save(psd_context *context);
 
 #ifdef __cplusplus
 }
