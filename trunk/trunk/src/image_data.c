@@ -81,7 +81,8 @@ static psd_status psd_combine_grayscale8_channel(psd_context * context)
 	psd_uchar * gray, * alpha, gray_color;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 2)
+//	if(context->color_channels == 2)
+	if(context->channels == 2)
 	{
 		alpha = context->temp_image_data;
 		gray = context->temp_image_data + context->per_channel_length;
@@ -118,7 +119,8 @@ static psd_status psd_combine_grayscale16_channel(psd_context * context)
 	psd_uchar * gray, * alpha, gray_color;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 2)
+//	if(context->color_channels == 2)
+	if(context->channels == 2)
 	{
 		alpha = context->temp_image_data;
 		gray = context->temp_image_data + context->per_channel_length;
@@ -180,16 +182,22 @@ static psd_status psd_combine_rgb8_channel(psd_context * context)
 	psd_uchar * red, * green, * blue, * alpha;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 4)
+//	if(context->color_channels == 4)
+	if(context->channels == 4)
 	{
-		alpha = context->temp_image_data;
-		red = context->temp_image_data + context->per_channel_length;
-		green = context->temp_image_data + context->per_channel_length * 2;
-		blue = context->temp_image_data + context->per_channel_length * 3;
-		
+		//blows is modified by freeman, it's RGBA not ARGB. 
+		//alpha = context->temp_image_data;
+		//red = context->temp_image_data + context->per_channel_length;
+		//green = context->temp_image_data + context->per_channel_length * 2;
+		//blue = context->temp_image_data + context->per_channel_length * 3;
+		red = context->temp_image_data;
+		green = context->temp_image_data + context->per_channel_length;
+		blue = context->temp_image_data + context->per_channel_length * 2;
+		alpha = context->temp_image_data + context->per_channel_length * 3;		
 		for(i = context->width * context->height; i --; )
 		{
-			*dst_color = PSD_ARGB_TO_COLOR(*alpha, *red, *green, *blue);
+			//*dst_color = PSD_ARGB_TO_COLOR(*alpha, *red, *green, *blue);
+			*dst_color = PSD_ABGR_TO_COLOR(*alpha, *blue, *green, *red);//modify by freeman
 			dst_color ++;
 			alpha ++;
 			red ++;
@@ -205,7 +213,8 @@ static psd_status psd_combine_rgb8_channel(psd_context * context)
 		
 		for(i = context->width * context->height; i --; )
 		{
-			*dst_color = PSD_RGB_TO_COLOR(*red, *green, *blue);
+			//*dst_color = PSD_RGB_TO_COLOR(*red, *green, *blue);
+			*dst_color = PSD_BGR_TO_COLOR(*blue, *green, *red);	//modify by freeman
 			dst_color ++;
 			red ++;
 			green ++;
@@ -223,7 +232,8 @@ static psd_status psd_combine_rgb16_channel(psd_context * context)
 	psd_uchar * red, * green, * blue, * alpha;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 4)
+//	if(context->color_channels == 4)
+	if(context->channels == 4)
 	{
 		alpha = context->temp_image_data;
 		red = context->temp_image_data + context->per_channel_length;
@@ -271,7 +281,8 @@ static psd_status psd_combine_cmyk8_channel(psd_context * context)
 	psd_uchar * cyan, * magenta, * yellow, * black, * alpha;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 5)
+//	if(context->color_channels == 5)
+	if(context->channels == 5)
 	{
 		alpha = context->temp_image_data;
 		cyan = context->temp_image_data + context->per_channel_length;
@@ -318,7 +329,8 @@ static psd_status psd_combine_cmyk16_channel(psd_context * context)
 	psd_uchar * cyan, * magenta, * yellow, * black, * alpha;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 5)
+//	if(context->color_channels == 5)
+	if(context->channels == 5)
 	{
 		alpha = context->temp_image_data;
 		cyan = context->temp_image_data + context->per_channel_length;
@@ -373,7 +385,8 @@ static psd_status psd_combine_lab8_channel(psd_context * context)
 	psd_uchar * lightness, * a, * b, * alpha;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 4)
+//	if(context->color_channels == 4)
+	if(context->channels == 4)
 	{
 		alpha = context->temp_image_data;
 		lightness = context->temp_image_data + context->per_channel_length;
@@ -416,7 +429,8 @@ static psd_status psd_combine_lab16_channel(psd_context * context)
 	psd_uchar * lightness, * a, * b, * alpha;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 4)
+//	if(context->color_channels == 4)
+	if(context->channels == 4)
 	{
 		alpha = context->temp_image_data;
 		lightness = context->temp_image_data + context->per_channel_length;
@@ -464,7 +478,8 @@ static psd_status psd_combine_multichannel8_channel(psd_context * context)
 	psd_uchar * cyan, * magenta, * yellow, * black;
 	psd_argb_color * dst_color = context->merged_image_data;
 
-	if(context->color_channels == 4)
+//	if(context->color_channels == 4)
+	if(context->channels == 4)
 	{
 		cyan = context->temp_image_data;
 		magenta = context->temp_image_data + context->per_channel_length;
@@ -577,10 +592,11 @@ psd_status psd_get_image_data(psd_context * context)
 		// used by the Macintosh ROM routine PackBits, and the TIFF standard.
 		case 1:
 			psd_assert(context->depth == 8 || context->depth == 16);
-			count_data = compress_data;
-			pixel_data = compress_data + context->height * context->channels * 2;
+			count_data = compress_data;		//context->channels
+			pixel_data = compress_data + context->height *context->color_channels* 2;
 			channel_data = image_data;
-			for(i = 0; i < context->channels; i ++)
+			
+			for(i = 0; i < context->color_channels; i ++)
 			{
 				pixel_count = 0;
 				for(j = 0; j < context->height; j ++)
@@ -775,6 +791,7 @@ psd_status psd_get_image_data(psd_context * context)
 	
 	psd_freeif(image_data);
 	context->temp_image_data = NULL;
+	//context->temp_image_data = context->merged_image_data;	//add by freeman
 
 	if(context->layer_count == 0 && 
 		(context->load_tag == psd_load_tag_all || context->load_tag == psd_load_tag_layer))
@@ -793,7 +810,6 @@ psd_status psd_get_image_data(psd_context * context)
 		layer->right = context->width;
 		layer->width = context->width;
 		layer->height = context->height;
-		layer->number_of_channels = context->color_channels;
 		layer->blend_mode = psd_blend_mode_normal;
 		layer->opacity = 255;
 		layer->fill_opacity = 255;
@@ -812,15 +828,15 @@ psd_status psd_get_image_data(psd_context * context)
 		layer->layer_mask_info.default_color = 255;
 		layer->layer_mask_info.disabled = psd_true;
 
-		layer->number_of_channels = context->color_channels;
+		layer->number_of_channels = context->color_channels+context->alpha_channels;	//add by freeman
 		layer->channel_info = (psd_channel_info *)psd_malloc(layer->number_of_channels * sizeof(psd_channel_info));
 		if(layer->channel_info == NULL)
 			return psd_status_malloc_failed;
 		memset(layer->channel_info, 0, layer->number_of_channels * sizeof(psd_channel_info));
 		start_channel = 0;
-		if(context->color_mode == psd_color_mode_rgb && context->color_channels == 4)
+		if(context->color_mode == psd_color_mode_rgb && context->channels == 4)	//modify by freeman
 			start_channel = -1;
-		else if(context->color_mode == psd_color_mode_cmyk && context->color_channels == 5)
+		else if(context->color_mode == psd_color_mode_cmyk && context->channels == 5) //modify by freeman
 			start_channel = -1;
 		for(i = 0; i < layer->number_of_channels; i ++)
 		{
@@ -833,7 +849,7 @@ psd_status psd_get_image_data(psd_context * context)
 		layer->layer_blending_ranges.gray_white_src = 65535;
 		layer->layer_blending_ranges.gray_black_dst = 0;
 		layer->layer_blending_ranges.gray_white_dst = 65535;
-		layer->layer_blending_ranges.number_of_blending_channels = context->color_channels;
+		layer->layer_blending_ranges.number_of_blending_channels = context->channels;	//modify by freeman
 		layer->layer_blending_ranges.channel_black_src = (psd_ushort *)psd_malloc(layer->layer_blending_ranges.number_of_blending_channels * 2);
 		layer->layer_blending_ranges.channel_white_src = (psd_ushort *)psd_malloc(layer->layer_blending_ranges.number_of_blending_channels * 2);
 		layer->layer_blending_ranges.channel_black_dst = (psd_ushort *)psd_malloc(layer->layer_blending_ranges.number_of_blending_channels * 2);
@@ -856,10 +872,11 @@ psd_status psd_get_image_data(psd_context * context)
 		}
 
 		if(context->load_tag == psd_load_tag_all)
-		{
+		{			//channel num must = 4
 			layer->image_data = (psd_argb_color *)psd_malloc(context->width * context->height * 4);
 			if(layer->image_data == NULL)
 				return psd_status_malloc_failed;
+			//save image data
 			memcpy(layer->image_data, context->merged_image_data, context->width * context->height * 4);
 		}
 		else if(context->load_tag == psd_load_tag_layer)
@@ -875,7 +892,9 @@ psd_status psd_get_image_data(psd_context * context)
 void psd_image_data_free(psd_context * context)
 {
 	psd_freeif(context->merged_image_data);
+	context->merged_image_data=NULL;
 	psd_freeif(context->temp_image_data);
+	context->temp_image_data=NULL;
 }
 
 void psd_alpha_channel_free(psd_context * context)
@@ -896,3 +915,104 @@ void psd_alpha_channel_free(psd_context * context)
 	psd_free(context->alpha_channel_info);
 	context->alpha_channel_info = NULL;
 }
+
+
+// 8bit rgb. Image data is stored in planar order, first all the red data, 
+//then all the green data, etc.  that means RR GG BB , no alpha channel data in merged data section.
+static psd_status psd_split_rgb8_channel(psd_context * context)
+{
+	psd_int i;
+	psd_uchar * red, * green, * blue, * alpha;
+	int width=context->width;
+	int height=context->height;
+//	int chCnt=context->color_channels;
+	int chCnt=context->channels;//-context->alpha_channels;
+	int chLen=width*height;	
+	psd_uchar *src_color = context->temp_image_data;
+	psd_uchar *dst_color;
+
+	psd_freeif(context->merged_image_data);	//psdload() will fill this pointer
+	dst_color=context->merged_image_data = psd_malloc(chLen*chCnt);
+	if(chCnt == 4)
+	{
+		red = dst_color;
+		green = dst_color + chLen;
+		blue = dst_color + chLen * 2;
+		alpha = dst_color + chLen * 3;
+		
+		for(i = width*height; i --; )
+		{
+			*red = src_color[0];
+			*green = src_color[1];
+			*blue = src_color[2];
+			*alpha = src_color[3];		//???argb or rgba?? i Don't know
+			src_color += 4;
+			red ++;
+			green ++;
+			blue ++;
+			alpha ++;	
+		}
+	}
+	else	//color channel = 3
+	{
+		red = dst_color;
+		green = dst_color + chLen;
+		blue = dst_color + chLen * 2;
+		
+		for(i = width*height; i --; )
+		{
+			*red = src_color[0];
+			*green = src_color[1];
+			*blue = src_color[2];
+			src_color += 3;		//skip src_color[3]
+			red ++;
+			green ++;
+			blue ++;
+		}	
+	}
+
+	return psd_status_done;
+}
+
+
+
+/* The last section of a Photoshop file contains the image pixel data. Image data is
+ stored in planar order: first all the red data, then all the green data, etc. Each plane is stored in scan-line order, with no pad 
+ bytes. If the compression code is 0, the image data is just the raw image data.
+ Planar order = RRR GGG BBB, etc.
+*/
+int psd_set_image_data(psd_context * context, void *fp)
+{
+	psd_int length;
+	psd_short compression;
+	psd_uchar * image_data = NULL;
+	psd_short tmp16;
+	int ret=-1;
+	
+	length = context->MergedImageLen;
+	
+	// Compression method
+	compression = 0;
+	LITTLE2BIG_SHORT(tmp16,compression);
+	psd_fwrite((psd_uchar *)&tmp16,2,fp);
+
+	psd_split_rgb8_channel(context);	//change RGBARGBARGBA--->AAARRRGGGBBB
+	image_data = (psd_uchar *)context->merged_image_data;
+	
+	switch(compression)
+	{
+		// Raw image data
+		case 0:
+			ret = psd_fwrite(image_data, length,fp);
+			if (ret == length)
+				ret = 0;	//success
+			break;
+
+		default:
+			ret = -1;
+			break;
+	}
+
+	return ret;
+}
+
