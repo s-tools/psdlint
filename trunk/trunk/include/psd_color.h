@@ -5,9 +5,19 @@
 extern "C" {
 #endif
 
-
+//in big endian mode: it's BGRA. in little endian mode:ARGB
 #define PSD_ARGB_TO_COLOR(a, r, g, b)		(((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 #define PSD_RGB_TO_COLOR(r, g, b)			(((0xFF) << 24) | ((r) << 16) | ((g) << 8) | (b))
+//belows are defined by freeman
+#define PSD_ABGR_TO_COLOR(a, b, g, r)		(((a) << 24) | ((b) << 16) | ((g) << 8) | (r))
+#define PSD_BGR_TO_COLOR(b, g, r)			(((0xFF) << 24) | ((b) << 16) | ((g) << 8) | (r))
+
+
+#define PSD_COLOR_TO_RGB(r, g, b,color) \
+	*((unsigned char *)&r) = color>>16; \
+	*((unsigned char *)&g) = color>>8; \
+	*((unsigned char *)&b) = color
+
 #define PSD_GET_ALPHA_COMPONENT(color)		((color) >> 24)
 #define PSD_GET_RED_COMPONENT(color)		(((color) & 0x00FF0000) >> 16)
 #define PSD_GET_GREEN_COMPONENT(color)		(((color) & 0x0000FF00) >> 8)
